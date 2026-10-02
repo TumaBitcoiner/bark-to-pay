@@ -33,6 +33,8 @@ Basic, usable tap-to-pay over Ark. Technical details live in `PLAN.md`; this fil
      signet faucet pays directly to Ark addresses.
 2. On incoming movement notification: "Received!" state, balance refreshes (both modes).
    A dog bark plays once on the success screen (notification volume, respects silent/DND).
+   While armed, the screen pulses the lightweight `wallet.sync()` every 2 s so the incoming
+   arkoor is detected in ~2–4 s instead of up to the daemon's 60 s sync interval.
 3. Leaving the screen clears any published HCE payload.
 
 ### Pay

@@ -134,9 +134,15 @@ notificationsFlow() → MovementCreated ✅        wallet.sendArkoorPayment(addr
   shared `parseRequest()` + `send()`; `onTapRead` parses/validates **synchronously** and sets
   `State.Sending` before returning (a tag re-discovery while phones touch can never double-send).
   QR scan (`onUriRead`) and pasted address (`onManualSubmit`) keep the Confirm sheet with fee.
-  `State.Confirming`/`ConfirmPaymentSheet` kept in code — re-enable tap confirmation by wiring
-  the NFC reader back to `onUriRead`. Note: tap while wallet still opening now lands on the Error
-  screen (was a small read-hint).
+   `State.Confirming`/`ConfirmPaymentSheet` kept in code — re-enable tap confirmation by wiring
+   the NFC reader back to `onUriRead`. Note: tap while wallet still opening now lands on the Error
+   screen (was a small read-hint).
+- **Receive-side sync pulse:** the daemon's default sync interval is 60 s
+  (`daemonSyncIntervalSecs` unset), which delayed the payee's "Received!" screen by up to a
+  minute whenever the server-push mailbox stream wasn't delivering. While armed
+  (`State.Active`/`State.Address`) `ReceiveViewModel` now calls the lightweight
+  `WalletRepository.sync()` (mailbox pull, no VTXO refresh) every 2 s; the pulse self-terminates
+  on leaving those states and is cancelled on `backToEditing()` (together with `watchJob`).
 - **Release build set up:** signing via `keystore.properties` (gitignored) + `keystore/bark-to-pay.jks`
   (PKCS12, RSA-2048, alias `bark-to-pay`); `signingConfigs.release` wired in `app/build.gradle.kts`,
   minify stays OFF (bark's JNA/UniFFI reflection would break under R8). Build:

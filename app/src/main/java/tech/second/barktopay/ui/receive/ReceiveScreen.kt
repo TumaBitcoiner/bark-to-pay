@@ -55,6 +55,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import java.text.NumberFormat
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -80,6 +81,7 @@ class ReceiveViewModel : ViewModel() {
     val state = _state.asStateFlow()
 
     private var watchJob: Job? = null
+    private var pulseJob: Job? = null
 
     /** Tap-to-receive: publishes a BIP 321 URI over NFC (HCE) + shows it as QR. */
     fun arm(context: Context, amountSats: ULong, label: String?) {
@@ -112,6 +114,8 @@ class ReceiveViewModel : ViewModel() {
 
     fun backToEditing() {
         _state.value = State.Editing
+        watchJob?.cancel()
+        pulseJob?.cancel()
     }
 
     private fun watchIncoming() {
@@ -123,6 +127,15 @@ class ReceiveViewModel : ViewModel() {
                     _state.value = State.Received(sats)
                     WalletRepository.clearLastReceived()
                 }
+            }
+        }
+        pulseJob?.cancel()
+        pulseJob = viewModelScope.launch {
+            // Forces a mailbox pull every 2s while armed, so an incoming payment is
+            // detected in ~2-4s instead of up to the daemon's 60s sync interval.
+            while (_state.value is State.Active || _state.value is State.Address) {
+                runCatching { WalletRepository.sync() }
+                delay(2_000)
             }
         }
     }

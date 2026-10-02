@@ -158,6 +158,9 @@ object WalletRepository {
 
     suspend fun newAddress(): String = requireWallet().newAddress()
 
+    /** Lightweight sync (mailbox pull, fees, pending rounds). Safe to call often. */
+    suspend fun sync() = requireWallet().sync()
+
     suspend fun estimateArkoorFee(amountSats: ULong): FeeEstimate =
         requireWallet().estimateArkoorPaymentFee(amountSats)
 
