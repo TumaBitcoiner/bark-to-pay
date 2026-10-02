@@ -41,7 +41,10 @@ Basic, usable tap-to-pay over Ark. Technical details live in `PLAN.md`; this fil
    manual form (Ark address or `bitcoin:` link + amount; URI-carried amounts are locked in) that
    reuses the same confirm sheet.
 2. On tap/scan: read URI → parse BIP 321 → validate Ark address.
-3. Confirm bottom sheet: amount, label, fee estimate → `Confirm` → `sendArkoorPayment`.
+3. **NFC tap sends immediately** (demo mode, one-tap UX; the state transition to "Sending…" is
+   synchronous so a tag re-discovery can't double-send). QR scan and pasted addresses still get a
+   confirm bottom sheet: amount, label, fee estimate → `Confirm` → `sendArkoorPayment`.
+   Re-enabling tap confirmation = wire the NFC reader back to `onUriRead` (sheet code kept).
 4. Result: "Sent!" or plain-language error (NFC off, no NFC hardware, invalid URI, insufficient funds, server unreachable).
 
 ## Architecture

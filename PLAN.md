@@ -130,6 +130,13 @@ notificationsFlow() → MovementCreated ✅        wallet.sendArkoorPayment(addr
   **Attribution:** "Barking of a dog" by Amada44, CC BY-SA 3.0, via Wikimedia Commons
   (https://commons.wikimedia.org/wiki/File:Barking_of_a_dog.ogg), trimmed to 0.745–1.425 s with
   ffmpeg edge fades. The trimmed adaptation remains CC BY-SA 3.0.
+- **One-tap pay (demo mode):** NFC tap now sends immediately — no confirm sheet. `PayViewModel`:
+  shared `parseRequest()` + `send()`; `onTapRead` parses/validates **synchronously** and sets
+  `State.Sending` before returning (a tag re-discovery while phones touch can never double-send).
+  QR scan (`onUriRead`) and pasted address (`onManualSubmit`) keep the Confirm sheet with fee.
+  `State.Confirming`/`ConfirmPaymentSheet` kept in code — re-enable tap confirmation by wiring
+  the NFC reader back to `onUriRead`. Note: tap while wallet still opening now lands on the Error
+  screen (was a small read-hint).
 - **Release build set up:** signing via `keystore.properties` (gitignored) + `keystore/bark-to-pay.jks`
   (PKCS12, RSA-2048, alias `bark-to-pay`); `signingConfigs.release` wired in `app/build.gradle.kts`,
   minify stays OFF (bark's JNA/UniFFI reflection would break under R8). Build:

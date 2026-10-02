@@ -8,7 +8,8 @@ when the money lands.
 
 ## Features
 
-- **Tap to pay** — payee shows a request (NFC HCE Type 4 tag emulation), payer taps, confirms, done.
+- **Tap to pay** — payee shows a request (NFC HCE Type 4 tag emulation), payer taps, done. One tap
+  sends instantly (demo mode); QR scans and pasted addresses still show a confirm sheet first.
 - **QR codes** — same payment request shown as a QR on the receive side; camera scanner built into
   the pay side. Works one-phone + emulator, no NFC needed.
 - **Paste an address** — send to any Ark address or `bitcoin:` payment link by pasting it.
@@ -64,8 +65,9 @@ keyPassword=...
 2. Create a wallet on each (needs internet).
 3. Fund one of them: Receive → "Show address instead" → copy → paste into the
    [signet faucet](https://signet.2nd.dev/) (choose an Ark payout).
-4. Payee: Receive → amount ≥ 1,000 sats → "Ready for tap". Payer: Pay → hold phones together
-   (or scan the QR) → Confirm & pay. Both phones bark. 🐕
+4. Payee: Receive → amount ≥ 1,000 sats → "Ready for tap". Payer: Pay → hold phones together —
+   one tap sends instantly. (Scanning the QR or pasting an address shows a confirm sheet first.)
+   Both phones bark. 🐕
 
 Note: the emulator has no NFC — tap-to-pay needs two physical devices.
 

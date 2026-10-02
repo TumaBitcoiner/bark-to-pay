@@ -87,23 +87,60 @@ class PayViewModel : ViewModel() {
     private val _manualError = MutableStateFlow<String?>(null)
     val manualError = _manualError.asStateFlow()
 
+    /** Parses and validates a payment request URI. Throws on bad input. */
+    private fun parseRequest(uri: String): Bip321.PaymentRequest {
+        val request = Bip321.parse(uri)
+        if (!validateArkAddress(request.address)) {
+            throw Bip321.InvalidUriException("Invalid Ark address in request")
+        }
+        if (request.amountSats == null || request.amountSats == 0uL) {
+            throw Bip321.InvalidUriException("Payment request has no amount")
+        }
+        return request
+    }
+
+    /** Performs the payment. Caller must already have set [State.Sending]. */
+    private fun send(request: Bip321.PaymentRequest) {
+        viewModelScope.launch {
+            try {
+                WalletRepository.sendArkoor(request.address, request.amountSats!!)
+                _state.value = State.Sent(request.amountSats)
+            } catch (e: Exception) {
+                _state.value = State.Error(e.message ?: "Payment failed")
+            }
+        }
+    }
+
+    /** QR scan path: read → confirm sheet (with fee). */
     fun onUriRead(uri: String) {
         if (_state.value !is State.Scanning) return
         viewModelScope.launch {
             try {
-                val request = Bip321.parse(uri)
-                if (!validateArkAddress(request.address)) {
-                    throw Bip321.InvalidUriException("Invalid Ark address in request")
-                }
-                if (request.amountSats == null || request.amountSats == 0uL) {
-                    throw Bip321.InvalidUriException("Payment request has no amount")
-                }
-                val fee = WalletRepository.estimateArkoorFee(request.amountSats)
+                val request = parseRequest(uri)
+                val fee = WalletRepository.estimateArkoorFee(request.amountSats!!)
                 _state.value = State.Confirming(request, fee.feeSats)
             } catch (e: Exception) {
                 _readHint.value = e.message ?: "Could not read payment request"
             }
         }
+    }
+
+    /**
+     * NFC tap path (demo mode): one tap sends immediately — no confirmation sheet.
+     * Parse/validate run synchronously and [State.Sending] is set before returning,
+     * so a tag re-discovery while the phones still touch can never double-send.
+     * Re-enable confirmation by wiring the NFC reader back to [onUriRead].
+     */
+    fun onTapRead(uri: String) {
+        if (_state.value !is State.Scanning) return
+        val request = try {
+            parseRequest(uri)
+        } catch (e: Exception) {
+            _readHint.value = e.message ?: "Could not read payment request"
+            return
+        }
+        _state.value = State.Sending
+        send(request)
     }
 
     fun onReadError(message: String) {
@@ -148,17 +185,7 @@ class PayViewModel : ViewModel() {
     fun confirm() {
         val confirming = _state.value as? State.Confirming ?: return
         _state.value = State.Sending
-        viewModelScope.launch {
-            try {
-                WalletRepository.sendArkoor(
-                    confirming.request.address,
-                    confirming.request.amountSats!!
-                )
-                _state.value = State.Sent(confirming.request.amountSats)
-            } catch (e: Exception) {
-                _state.value = State.Error(e.message ?: "Payment failed")
-            }
-        }
+        send(confirming.request)
     }
 
     fun cancel() {
@@ -198,7 +225,7 @@ fun PayScreen(
     // Reader is armed exactly while this screen is shown.
     DisposableEffect(Unit) {
         vm.clearHint()
-        nfcReader.start(onUri = vm::onUriRead, onError = vm::onReadError)
+        nfcReader.start(onUri = vm::onTapRead, onError = vm::onReadError)
         onDispose { nfcReader.stop() }
     }
 
