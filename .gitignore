@@ -1,0 +1,13 @@
+# Never commit release signing material.
+keystore.properties
+keystore/
+*.jks
+*.keystore
+
+# Build artifacts
+/app/build/
+/build/
+/.gradle/
+*.iml
+/.idea/
+local.properties
